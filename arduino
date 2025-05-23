@@ -1,0 +1,89 @@
+#define ROW1 13
+#define ROW2 12
+#define ROW3 11
+#define ROW4 10
+#define ROW5 9
+#define ROW6 8
+#define ROW7 7
+#define ROW8 6
+
+#define COL1 5
+#define COL2 4
+#define COL3 3
+#define COL4 A4
+#define COL5 A3
+#define COL6 A2
+#define COL7 A1
+#define COL8 A0
+
+int rowPins[8] = {ROW1, ROW2, ROW3, ROW4, ROW5, ROW6, ROW7, ROW8};
+int colPins[8] = {COL1, COL2, COL3, COL4, COL5, COL6, COL7, COL8};
+
+// 擋板碰撞圖案
+byte hitIcon[8] = {
+  B00000000,
+  B00100100,
+  B00011000,
+  B01111110,
+  B00011000,
+  B00100100,
+  B00000000,
+  B00000000
+};
+
+// 出界圖案
+byte outIcon[8] = {
+  B10011001,
+  B01000010,
+  B00111100,
+  B00011000,
+  B00011000,
+  B00111100,
+  B01000010,
+  B10011001
+};
+
+void setup() {
+  Serial.begin(9600);
+  for (int i = 0; i < 8; i++) {
+    pinMode(rowPins[i], OUTPUT);
+    pinMode(colPins[i], OUTPUT);
+  }
+  clearDisplay();
+}
+
+void loop() {
+  if (Serial.available()) {
+    char cmd = Serial.read();
+    if (cmd == 'C') {
+      showIcon(hitIcon, 200);
+    } else if (cmd == 'O') {
+      showIcon(outIcon, 500);
+    }
+  }
+}
+
+void showIcon(byte icon[8], int delayTime) {
+  unsigned long startTime = millis();
+  while (millis() - startTime < delayTime) {
+    for (int row = 0; row < 8; row++) {
+      clearRows();
+      digitalWrite(rowPins[row], LOW); // 啟用該列
+      for (int col = 0; col < 8; col++) {
+        bool ledOn = bitRead(icon[row], 7 - col);
+        digitalWrite(colPins[col], ledOn ? LOW : HIGH); // LOW 為亮
+      }
+      delayMicroseconds(1000);
+    }
+  }
+  clearDisplay();
+}
+
+void clearDisplay() {
+  for (int r = 0; r < 8; r++) digitalWrite(rowPins[r], HIGH);
+  for (int c = 0; c < 8; c++) digitalWrite(colPins[c], HIGH);
+}
+
+void clearRows() {
+  for (int r = 0; r < 8; r++) digitalWrite(rowPins[r], HIGH);
+}
