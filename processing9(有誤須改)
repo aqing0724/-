@@ -1,0 +1,103 @@
+import processing.serial.*;
+
+float ballX, ballY;
+float ballSpeedX = 4, ballSpeedY = 3;
+float paddle1Y, paddle2Y;
+float paddleHeight = 80;
+float paddleWidth = 10;
+
+Serial myPort;
+
+void setup() {
+  size(600, 400);
+  ballX = width / 2;
+  ballY = height / 2;
+  paddle1Y = height / 2 - paddleHeight / 2;
+  paddle2Y = height / 2 - paddleHeight / 2;
+
+  // 自動找第一個 Serial port（如果不對可改 Serial.list()[1]、[2]...）
+  printArray(Serial.list());
+  myPort = new Serial(this, Serial.list()[0], 9600);
+}
+
+void draw() {
+  background(0);
+  drawBall();
+  moveBall();
+  drawPaddles();
+  moveAI();
+  checkCollision();
+  showScore();
+}
+
+void drawBall() {
+  fill(255);
+  ellipse(ballX, ballY, 15, 15);
+}
+
+void moveBall() {
+  ballX += ballSpeedX;
+  ballY += ballSpeedY;
+
+  if (ballY < 0 || ballY > height) {
+    ballSpeedY *= -1;
+  }
+
+  // 出界
+  if (ballX < 0 || ballX > width) {
+    myPort.write('O'); // 傳送出界指令
+    resetGame();
+  }
+}
+
+void drawPaddles() {
+  fill(255);
+  rect(10, paddle1Y, paddleWidth, paddleHeight);
+  rect(width - 20, paddle2Y, paddleWidth, paddleHeight);
+}
+
+void keyPressed() {
+  if (key == 'w' || key == 'W') {
+    paddle1Y -= 20;
+  } else if (key == 's' || key == 'S') {
+    paddle1Y += 20;
+  }
+  paddle1Y = constrain(paddle1Y, 0, height - paddleHeight);
+}
+
+void moveAI() {
+  if (ballY > paddle2Y + paddleHeight / 2) {
+    paddle2Y += 2.5;
+  } else {
+    paddle2Y -= 2.5;
+  }
+  paddle2Y = constrain(paddle2Y, 0, height - paddleHeight);
+}
+
+void checkCollision() {
+  // 撞到左邊擋板
+  if (ballX < 20 && ballY > paddle1Y && ballY < paddle1Y + paddleHeight) {
+    ballSpeedX *= -1;
+    ballX = 20;
+    myPort.write('C'); // 傳送擋板碰撞指令
+  }
+
+  // 撞到右邊擋板
+  if (ballX > width - 30 && ballY > paddle2Y && ballY < paddle2Y + paddleHeight) {
+    ballSpeedX *= -1;
+    ballX = width - 30;
+  }
+}
+
+void resetGame() {
+  ballX = width / 2;
+  ballY = height / 2;
+  ballSpeedX *= -1;
+  ballSpeedY = random(-3, 3);
+}
+
+void showScore() {
+  fill(255);
+  textSize(14);
+  text("桌球遊戲 - W/S 控制擋板", 20, 20);
+}
